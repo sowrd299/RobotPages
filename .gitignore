@@ -1,4 +1,5 @@
 *.pyc
 *.html
+*.txt
 /*_bestanden/*
 /*_files/*
