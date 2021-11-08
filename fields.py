@@ -4,6 +4,7 @@ import re
 class AttrField():
 	def __init__(self, attr_name):
 		self.attr_name = attr_name
+		self.names = [attr_name]
 
 	def parse(self, soup):
 		return soup[self.attr_name]
@@ -19,10 +20,9 @@ class ReField():
 	
 	value_group_name = "value"
 
-	def __init__(self, pattern, name, *args):
+	def __init__(self, pattern, *args):
 		self.re = re.compile(pattern)
-		self.name = name
-		self.extra_names = list(args)
+		self.names = list(args)
 
 	def get(self, soup, out_data, start_index = 0):
 		'''
@@ -32,9 +32,8 @@ class ReField():
 		inner_html = soup if isinstance(soup, str) else soup.decode_contents()
 		match = self.re.search(inner_html, start_index)
 		if match:
-			out_data[self.name] = match.group(self.value_group_name)
-			for i, name in enumerate(self.extra_names):
-				out_data[name] = match.group(self.value_group_name + str(i+1))
+			for i, name in enumerate(self.names):
+				out_data[name] = match.group(self.value_group_name + str(i))
 			return match.end()
 		else:
 			return len(inner_html)
@@ -49,12 +48,16 @@ class TranslatedField():
 		super().__init__(*args, **kwargs)
 		self.translations = translations
 
-	def parse(self, input):
-		text = super().parse(input)
-		for k,v in self.translations.items():
-			text = text.replace(k,v)
-		return text
-
+	def get(self, input, output, *args, **kwargs):
+		r = super().get(input, output, *args, **kwargs)
+		for name in self.names:
+			for k,v in self.translations.items():
+				if name in output and output[name]:
+					output[name] = output[name].replace(k,v)
+		return r
 
 class TranslatedAttrField(TranslatedField, AttrField):
+	pass
+
+class TranslatedReField(TranslatedField, ReField):
 	pass

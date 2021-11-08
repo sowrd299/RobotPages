@@ -1,7 +1,7 @@
 import requests
 import bs4
 
-from fields import AttrField, TranslatedAttrField, ReField
+from fields import AttrField, TranslatedAttrField, TranslatedReField
 
 #cards_page = requests.get('https://tcg.build-divide.com/official/cards/search')
 cards_path = "Cards.html"
@@ -39,7 +39,7 @@ sp = r" *"
 br = sp + r"\n" + sp
 
 pattern = r"\n[A-F0-9\-]+ ?\n"
-pattern += r"(?P<value>[\w #\"',]+)" + br # Title
+pattern += r"(?P<value0>[\w #\"',]+)" + br # Title
 pattern += r"[^\n]*" + br # Card type
 pattern += r"(Total cost:" + sp + r"\d/" + sp + r"(?P<value1>\w*):" + sp # cost
 pattern += r"(?P<value2>\d)" + sp # Color cost
@@ -53,7 +53,11 @@ print(pattern)
 
 re_fields = [
 	#ReField(r"<[br/]+>(?P<value>[\w ]+)<[br/]+>(<div>)?[^<]*<[br/]+>", "tl-title"),
-	ReField(pattern, "tl-title", "data-color-name1", "data-cost-color1", "data-cost-colorless", "data-power", "data-attribute", "tl-description")
+	TranslatedReField(
+		{"Zombie" : "Undead"},
+		pattern,
+		"tl-title", "data-color-name1", "data-cost-color1", "data-cost-colorless", "data-power", "data-attribute", "tl-description"
+	)
 	#ReField(r"(/ Hit: (?P<value>\d+))? *<[br/]", "data-hit"),
 ]
 
@@ -83,6 +87,6 @@ if __name__=="__main__":
 	extra_cards = None
 	with open(extra_cards_path) as cards_file:
 		extra_cards = parse_text_cards(cards_file.read(), re_fields)
-	for card in extra_cards:
-		print(card['tl-title'] if 'tl-title' in card else card)
 	print("External data for {} cards parsed!".format(len(extra_cards)))
+	#for card in extra_cards:
+	#	print(card)
