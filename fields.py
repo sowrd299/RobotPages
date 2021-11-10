@@ -19,6 +19,7 @@ class ReField():
 	'''
 	
 	value_group_name = "value"
+	max_len = 500
 
 	def __init__(self, pattern, *args):
 		self.re = re.compile(pattern)
@@ -30,6 +31,7 @@ class ReField():
 		Also returns the end of its search index
 		'''
 		inner_html = soup if isinstance(soup, str) else soup.decode_contents()
+		#inner_html = inner_html[:start_index + self.max_len]
 		match = self.re.search(inner_html, start_index)
 		if match:
 			for i, name in enumerate(self.names):

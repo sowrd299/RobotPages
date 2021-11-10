@@ -1,7 +1,7 @@
-import requests
 import bs4
 
 from fields import AttrField, TranslatedAttrField, TranslatedReField
+from coalation import coalate
 
 #cards_page = requests.get('https://tcg.build-divide.com/official/cards/search')
 cards_path = "Cards.html"
@@ -70,6 +70,7 @@ def parse_text_cards(text, fields):
 		for field in fields:
 			i = field.get(text, card_data, i)
 		if card_data:
+			print(card_data["tl-title"])
 			cards.append(card_data)
 	return cards
 
@@ -90,3 +91,5 @@ if __name__=="__main__":
 	print("External data for {} cards parsed!".format(len(extra_cards)))
 	#for card in extra_cards:
 	#	print(card)
+	coalated_cards = coalate(cards, lambda x : len(x['data-description']), extra_cards, lambda x : len(x['tl-description']))
+	print("{} cards successfully coalated!".format(len(coalated_cards)))
