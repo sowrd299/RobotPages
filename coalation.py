@@ -54,7 +54,6 @@ def coalate(*args):
 		else:
 			uncoalated_keys.append(key)
 
-	for key in sorted(uncoalated_keys):
-		print(key)
+	print("{} keys uncoalated!".format(len(uncoalated_keys)))
 	
 	return coalated_entries
