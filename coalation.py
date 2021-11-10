@@ -43,11 +43,18 @@ def coalate(*args):
 	
 	# Ascociate data!
 	coalated_entries = []
+	uncoalated_keys = []
 	for key in keys:
 		key_buckets = [set_buckets[key] for set_buckets in buckets if key in set_buckets]
-		if all(len(key_bucket) == 1 for key_bucket in key_buckets) and len(key_buckets) > 1:
-			print("Perfect coalation without guessing!!!")
-			coalated_entry = merge_entries(*(key_bucket[0] for key_bucket in key_buckets))
-			coalated_entries.append(coalated_entry)
+		if len(key_buckets) == len(data_sets):
+			num_entries = min([len(bucket) for bucket in key_buckets])
+			for i in range(num_entries):
+				coalated_entry = merge_entries(*(key_bucket[i] for key_bucket in key_buckets))
+				coalated_entries.append(coalated_entry)
+		else:
+			uncoalated_keys.append(key)
+
+	for key in sorted(uncoalated_keys):
+		print(key)
 	
 	return coalated_entries

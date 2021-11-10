@@ -1,6 +1,6 @@
 import bs4
 
-from fields import AttrField, TranslatedAttrField, TranslatedReField
+from fields import AttrField, TranslatedAttrField, TranslatedReField, SetField, SetTranslatedAttrField
 from coalation import coalate
 
 #cards_page = requests.get('https://tcg.build-divide.com/official/cards/search')
@@ -13,7 +13,25 @@ fields = [
 	AttrField("data-product-name"),
 	AttrField("data-title"),
 	AttrField("data-illustrator"),
-	TranslatedAttrField({"不死" : "Undead", "魔族" : "Demon tribe", "呪術" : "Curse"}, "data-attribute"),
+	SetTranslatedAttrField("/", {
+		"不死" : "Undead",
+		"魔族" : "Demon tribe",
+		"呪術" : "Curse",
+		"人間" : "Human",
+		"グラド" : "Grado",
+		"兵器" : "Weapon",
+		"理力" : "Force",
+		"天使" : "Angel",
+		"精霊" : "Spirit",
+		"闘気" : "Battle aura",
+		"獣" : "Beast",
+		"テノス" : "Tinos",
+		"天変" : "Natural calamity",
+		"竜" : "Dragon",
+		"異相" : "Unusual look",
+		"観測者" : "Observer",
+		"巨人" : "Giant"
+	}, "data-attribute"),
 	AttrField("data-power"),
 	AttrField("data-hit"),
 	AttrField("data-cost-color1"),
@@ -57,8 +75,9 @@ re_fields = [
 		{"Zombie" : "Undead"},
 		pattern,
 		"tl-title", "data-color-name1", "data-cost-color1", "data-cost-colorless", "data-power", "data-attribute", "tl-description"
-	)
+	),
 	#ReField(r"(/ Hit: (?P<value>\d+))? *<[br/]", "data-hit"),
+	SetField("/", ["data-attribute"])
 ]
 
 def parse_text_cards(text, fields):
@@ -68,16 +87,11 @@ def parse_text_cards(text, fields):
 	while i < len(text):
 		card_data = dict()
 		for field in fields:
-			i = field.get(text, card_data, i)
+			i = field.get(text, card_data, i) or i
 		if card_data:
 			print(card_data["tl-title"])
 			cards.append(card_data)
 	return cards
-
-
-def add_extras(raw_text, cards):
-	for card in cards:
-		pass
 
 
 if __name__=="__main__":
@@ -93,3 +107,5 @@ if __name__=="__main__":
 	#	print(card)
 	coalated_cards = coalate(cards, lambda x : len(x['data-description']), extra_cards, lambda x : len(x['tl-description']))
 	print("{} cards successfully coalated!".format(len(coalated_cards)))
+	for card in coalated_cards:
+		pass#print(card)

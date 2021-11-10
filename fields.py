@@ -1,19 +1,38 @@
 import re
 
 
-class AttrField():
+
+class Field():
+
+	empty_field = ""
+
+	def __init__(self, names):
+		self.names = names
+
+	def fix_empty_fields(self, output):
+		for name in self.names:
+			if not name in output or not output[name]:
+				output[name] = self.empty_field
+
+	def get(self, input, output, *args, **kwargs):
+		pass
+
+
+
+class AttrField(Field):
 	def __init__(self, attr_name):
+		super().__init__([attr_name])
 		self.attr_name = attr_name
-		self.names = [attr_name]
 
 	def parse(self, soup):
 		return soup[self.attr_name]
 
 	def get(self, soup, out_data):
 		out_data[self.attr_name] = self.parse(soup)
+		self.fix_empty_fields(out_data)
 
 
-class ReField():
+class ReField(Field):
 	'''
 	Extracts fields based on names subgroups of the RE found in the inner HTML of the given soup
 	'''
@@ -22,8 +41,8 @@ class ReField():
 	max_len = 500
 
 	def __init__(self, pattern, *args):
+		super().__init__(list(args))
 		self.re = re.compile(pattern)
-		self.names = list(args)
 
 	def get(self, soup, out_data, start_index = 0):
 		'''
@@ -36,13 +55,14 @@ class ReField():
 		if match:
 			for i, name in enumerate(self.names):
 				out_data[name] = match.group(self.value_group_name + str(i))
+			self.fix_empty_fields(out_data)
 			return match.end()
 		else:
 			return len(inner_html)
 
 
 
-class TranslatedField():
+class TranslatedField(Field):
 	'''
 	This is a mix-in
 	'''
@@ -58,7 +78,28 @@ class TranslatedField():
 					output[name] = output[name].replace(k,v)
 		return r
 
+
+
+class SetField(Field):
+	'''
+	This is a mix-in to reformat a field as a set
+	'''
+	def __init__(self, delimeter, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.delimeter = delimeter
+
+	def get(self, input, output, *args, **kwargs):
+		r = super().get(input, output, *args, **kwargs)
+		for name in self.names:
+			output[name] = frozenset(map(str.strip, output[name].split(self.delimeter)))
+		return r
+
+
+
 class TranslatedAttrField(TranslatedField, AttrField):
+	pass
+
+class SetTranslatedAttrField(SetField, TranslatedAttrField):
 	pass
 
 class TranslatedReField(TranslatedField, ReField):
