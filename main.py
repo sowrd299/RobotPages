@@ -1,5 +1,6 @@
 import bs4
 
+from parsing import *
 from fields import AttrField, TranslatedAttrField, TranslatedReField, SetField, SetTranslatedAttrField
 from coalation import coalate
 
@@ -38,21 +39,12 @@ fields = [
 	AttrField("data-cost-color1"),
 	TranslatedAttrField({"赤" : "Red", "白" : "White", "青" : "Blue", "黒" : "Black"}, "data-color-name1"),
 	AttrField("data-cost-colorless"),
-	AttrField("data-description"),
+	TranslatedAttrField({"--BR--" : ""}, "data-description"),
 	TranslatedAttrField({"バスター" : "Buster"}, "data-trigger-name"),
 	AttrField("data-flavor-text"),
 	AttrField("data-is-ace-name"),
 	AttrField("data-image-url")
 ]
-
-def parse_html_cards(soup, fields):
-	cards = []
-	for card in soup.find_all("div", {"class":"card-list-item__card__img"}):
-		card_data = dict()
-		for field in fields:
-			field.get(card, card_data)
-		cards.append(card_data)
-	return cards
 
 sp = r" *"
 br = sp + r"\n" + sp
@@ -66,7 +58,7 @@ pattern += r"(/"+sp+r"Colorless:"+sp+r"(?P<value3>\d))?" + br + r")?" # Colorles
 pattern += r"(POWER: (?P<value4>\d+)[\w /:]*\d" + br + r")?" # Power and hit
 pattern += r"(\((?P<value5>[\w/ ]+)\)" + br + r")?" # Attribute
 #pattern += r"(?P<value6>([^=/(]|" + sp + r"|" + br + r")([^=/]|" + sp + r"|" + br + r")*)(<img|<a|$)" # Description
-pattern += r"(?P<value6>[^(]([^=/]|[kles]/|" + sp + r"|" + br + r")*)\." # Description
+pattern += r"(?P<value6>[^(]([^=/]|[kles]/|" + sp + r"|" + br + r")*\.)" # Description
 
 #print(pattern)
 
@@ -80,19 +72,6 @@ re_fields = [
 	#ReField(r"(/ Hit: (?P<value>\d+))? *<[br/]", "data-hit"),
 	SetField("/", ["data-attribute"])
 ]
-
-def parse_text_cards(text, fields):
-	#print(body)
-	i = 0
-	cards = []
-	while i < len(text):
-		card_data = dict()
-		for field in fields:
-			i = field.get(text, card_data, i) or i
-		if card_data:
-			print("{}...".format(card_data["tl-title"]))
-			cards.append(card_data)
-	return cards
 
 
 if __name__=="__main__":
