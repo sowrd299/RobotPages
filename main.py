@@ -4,7 +4,7 @@ import shutil
 from os import path
 
 from parsing import *
-from fields import AttrField, TranslatedAttrField, TranslatedReField, SetField, SetTranslatedAttrField, MappedField
+from fields import AttrField, TranslatedAttrField, TranslatedReField, SetField, SetTranslatedAttrField, MappedField, ReField
 from coalation import coalate
 
 #cards_page = requests.get('https://tcg.build-divide.com/official/cards/search')
@@ -53,31 +53,30 @@ fields = [
 
 sp = r" *"
 br = sp + r"\n" + sp
-
-pattern = r"\n[A-F0-9\-]+ ?\n"
-pattern += r"(?P<value0>[\w #\"',]+)" + br # Title
-pattern += r"[^\n]*" + br # Card type
-pattern += r"(Total cost:" + sp + r"\d/" + sp + r"(?P<value1>\w*):" + sp # cost
-pattern += r"(?P<value2>\d)" + sp # Color cost
-pattern += r"(/"+sp+r"Colorless:"+sp+r"(?P<value3>\d))?" + br + r")?" # Colorless cost
-pattern += r"(POWER: (?P<value4>\d+)[\w /:]*\d" + br + r")?" # Power and hit
-pattern += r"(\((?P<value5>[\w/ ]+)\)" + br + r")?" # Attribute
-#pattern += r"(?P<value6>([^=/(]|" + sp + r"|" + br + r")([^=/]|" + sp + r"|" + br + r")*)(<img|<a|$)" # Description
-pattern += r"(?P<value6>[^(]([^=/]|[kles]/|" + sp + r"|" + br + r")*\.)" # Description
+translations = {"Zombie" : "Undead", "Decoy" : "[[Decoy]]", "Blitz" : "[[Blitz]]"}
 
 #print(pattern)
 
 re_fields = [
 	#ReField(r"<[br/]+>(?P<value>[\w ]+)<[br/]+>(<div>)?[^<]*<[br/]+>", "tl-title"),
-	TranslatedReField(
-		{"Zombie" : "Undead", "Decoy" : "[[Decoy]]", "Blitz" : "[[Blitz]]"},
-		pattern,
-		"tl-title", "data-color-name1", "data-cost-color1", "data-cost-colorless", "data-power", "data-attribute", "tl-description"
+	#"tl-title", "data-color-name1", "data-cost-color1", "data-cost-colorless", "data-power", "data-attribute", "tl-description"
+	ReField(r"^[\\A-Za-z\d\-]+ ?\n"),
+	ReField(r"^(?P<value0>[\w #\"'\-,]+)" + br, "tl-title"),
+	ReField(r"^(Unit|Command|Territory)[^\n]*" + br),
+	ReField(
+		r"^Total cost:" + sp + r"\d/" + sp + r"(?P<value0>\w*):" + sp + r"(?P<value1>\d)" + sp + r"(/"+sp+r"Colorless:"+sp+r"(?P<value2>\d))?" + br,
+		"data-color-name1", "data-cost-color1", "data-cost-colorless"
 	),
+	ReField(r"^POWER: (?P<value0>\d+)[\w /:]*\d" + br, "data-power"),
+	TranslatedReField(translations, r"^\((?P<value0>[\w/ ]+)\)" + br, "data-attribute"),
+	TranslatedReField(translations, r"^(?P<value0>[^(]([^=/]|[kles]/|" + sp + r"|" + br + r")*[\.\]0)])" + br, "tl-description"),
+
 	#ReField(r"(/ Hit: (?P<value>\d+))? *<[br/]", "data-hit"),
 	SetField("/", ["data-attribute"]),
 	MappedField(lambda s, i : s[i] if s[i] != "\n" or s[i-1] in ".]>" or s[i+1] in ".[<" else " " if s[i-1] != " " and s[i+1] != " " else "", ["tl-description"])
 ]
+
+unmatchable_field = ReField(r"^[\n]*\n")
 
 
 
@@ -112,7 +111,7 @@ if __name__=="__main__":
 	# Parse the extra data for the cards
 	extra_cards = None
 	with open(extra_cards_path) as cards_file:
-		extra_cards = parse_text_cards(cards_file.read(), re_fields)
+		extra_cards = parse_text_cards(cards_file.read(), re_fields, unmatchable_field)
 	print("External data for {} cards parsed!".format(len(extra_cards)))
 
 	# Coalate that data

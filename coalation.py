@@ -41,7 +41,7 @@ def coalate(*args):
 	for data_set, sort_func in zip(data_sets, sort_funcs):
 		set_buckets = DefaultDict(list)
 		for entry in data_set:
-			key = tuple(entry[col] for col in cols)
+			key = tuple((entry[col] if col in entry else None) for col in cols)
 			keys.add(key)
 			set_buckets[key].append(entry)
 		for key, bucket in set_buckets.items():

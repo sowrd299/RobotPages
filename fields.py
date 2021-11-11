@@ -10,6 +10,7 @@ class Field():
 		self.names = names
 
 	def fix_empty_fields(self, output):
+		# TODO: Make this harder to forget to call
 		for name in self.names:
 			if not name in output or not output[name]:
 				output[name] = self.empty_field
@@ -25,7 +26,10 @@ class AttrField(Field):
 		self.attr_name = attr_name
 
 	def parse(self, soup):
-		return soup[self.attr_name]
+		try:
+			return soup[self.attr_name]
+		except KeyError as e:
+			pass
 
 	def get(self, soup, out_data):
 		out_data[self.attr_name] = self.parse(soup)
@@ -44,21 +48,22 @@ class ReField(Field):
 		super().__init__(list(args))
 		self.re = re.compile(pattern)
 
-	def get(self, soup, out_data, start_index = 0):
+	def get(self, soup, out_data, start_index = 0, skip_unmatched = True):
 		'''
 		Only will search from the given start index
 		Also returns the end of its search index
 		'''
 		inner_html = soup if isinstance(soup, str) else soup.decode_contents()
 		#inner_html = inner_html[:start_index + self.max_len]
-		match = self.re.search(inner_html, start_index)
+		match = self.re.search(inner_html[start_index:])
 		if match:
 			for i, name in enumerate(self.names):
 				out_data[name] = match.group(self.value_group_name + str(i))
 			self.fix_empty_fields(out_data)
-			return match.end()
+			return start_index + match.end()
 		else:
-			return len(inner_html)
+			self.fix_empty_fields(out_data)
+			return len(inner_html) if skip_unmatched else start_index
 
 
 
@@ -93,8 +98,9 @@ class SetField(Field):
 	def get(self, input, output, *args, **kwargs):
 		r = super().get(input, output, *args, **kwargs)
 		for name in self.names:
-			fs = set(map(str.strip, output[name].split(self.delimeter)))
-			output[name] = self.delimeter.join(sorted(fs, key=self.sort_by))
+			if name in output and output[name]:
+				fs = set(map(str.strip, output[name].split(self.delimeter)))
+				output[name] = self.delimeter.join(sorted(fs, key=self.sort_by))
 		return r
 
 
@@ -108,13 +114,14 @@ class MappedField(Field):
 		super().__init__(*args, **kwargs)
 		self.func = func 
 
-	def get(self, input, ouput, *args, **kwargs):
-		r = super().get(input, ouput, *args, **kwargs)
+	def get(self, input, output, *args, **kwargs):
+		r = super().get(input, output, *args, **kwargs)
 		for name in self.names:
-			s = ""
-			for i in range(len(ouput[name])):
-				s += self.func(ouput[name], i)
-			ouput[name] = s
+			if name in output and output[name]:
+				s = ""
+				for i in range(len(output[name])):
+					s += self.func(output[name], i)
+				output[name] = s
 		return r
 
 

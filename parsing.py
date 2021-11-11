@@ -1,3 +1,5 @@
+class ParseDidntAdvanceError(Exception):
+	pass
 
 def parse_html_cards(soup, fields):
 	'''
@@ -12,20 +14,31 @@ def parse_html_cards(soup, fields):
 	return cards
 
 
-def parse_text_cards(text, fields):
+def parse_text_cards(text, fields, unmatchable_field = None):
 	'''
 	Uses field object to extract data of interest from a text file
 	Assumes it will receive at least one ReFields 
 	'''
 	#print(body)
 	i = 0
+	last_i = -1
 	cards = []
 	while i < len(text):
+
+		if i != last_i:
+			last_i = i
+		elif unmatchable_field:
+			print("Skipping invalid data...")
+			i = unmatchable_field.get(text, {}, i)
+		else:
+			raise ParseDidntAdvanceError
+
+		#print("Parsing card from {}...".format(i))
 		card_data = dict()
 		for field in fields:
-			i = field.get(text, card_data, i) or i
+			i = field.get(text, card_data, i, not unmatchable_field) or i
 		if card_data:
-			print("{}...".format(card_data["tl-title"]))
+			print("Parsed {}...".format(card_data["tl-title"] if "tl-title" in card_data else card_data))
 			cards.append(card_data)
 	return cards
 
