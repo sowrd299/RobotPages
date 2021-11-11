@@ -1,4 +1,7 @@
 import bs4
+import requests
+import shutil
+from os import path
 
 from parsing import *
 from fields import AttrField, TranslatedAttrField, TranslatedReField, SetField, SetTranslatedAttrField
@@ -8,6 +11,7 @@ from coalation import coalate
 cards_path = "Cards.html"
 extra_cards_path = "Translations.txt"
 template_path = "WikiTemplate.txt"
+image_dir_path = "ImageDownloads"
 
 fields = [
 	TranslatedAttrField({"ユニット" : "Unit", "コマンド" : "Command", "テリトリー":"Territory"}, "data-card-type"),
@@ -74,6 +78,27 @@ re_fields = [
 ]
 
 
+
+def download_image(url, file_path):
+	'''
+	Based on code from: https://towardsdatascience.com/how-to-download-an-image-using-python-38a75cfa21c
+	'''
+
+	extension = "." + url.split(".")[-1]
+	if file_path[-len(extension):] != extension:
+		file_path += extension
+	
+	if not path.isfile(file_path):
+		r = requests.get(url, stream = True)
+		r.raw.decode_conent = True
+
+		with open(file_path, 'wb') as file:
+			shutil.copyfileobj(r.raw, file)
+
+	return file_path
+
+
+
 if __name__=="__main__":
 
 	# Parse the original cards
@@ -91,6 +116,12 @@ if __name__=="__main__":
 	# Coalate that data
 	coalated_cards = coalate(cards, lambda x : len(x['data-description']), extra_cards, lambda x : len(x['tl-description']))
 	print("{} cards successfully coalated!".format(len(coalated_cards)))
+
+	# Get the images
+	print("Downloading images...")
+	for card in coalated_cards:
+		image_path = download_image(card["data-image-url"], path.join(image_dir_path, card["tl-title"].replace(" ","").replace(",","").replace("\"","")))
+		card["image-name"] = path.basename(image_path)
 
 	# Format the wiki pages
 	with open(template_path) as template_file:
