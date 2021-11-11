@@ -4,7 +4,7 @@ import shutil
 from os import path
 
 from parsing import *
-from fields import AttrField, TranslatedAttrField, TranslatedReField, SetField, SetTranslatedAttrField
+from fields import AttrField, TranslatedAttrField, TranslatedReField, SetField, SetTranslatedAttrField, MappedField
 from coalation import coalate
 
 #cards_page = requests.get('https://tcg.build-divide.com/official/cards/search')
@@ -50,6 +50,7 @@ fields = [
 	AttrField("data-image-url")
 ]
 
+
 sp = r" *"
 br = sp + r"\n" + sp
 
@@ -69,12 +70,13 @@ pattern += r"(?P<value6>[^(]([^=/]|[kles]/|" + sp + r"|" + br + r")*\.)" # Descr
 re_fields = [
 	#ReField(r"<[br/]+>(?P<value>[\w ]+)<[br/]+>(<div>)?[^<]*<[br/]+>", "tl-title"),
 	TranslatedReField(
-		{"Zombie" : "Undead"},
+		{"Zombie" : "Undead", "Decoy" : "[[Decoy]]", "Blitz" : "[[Blitz]]"},
 		pattern,
 		"tl-title", "data-color-name1", "data-cost-color1", "data-cost-colorless", "data-power", "data-attribute", "tl-description"
 	),
 	#ReField(r"(/ Hit: (?P<value>\d+))? *<[br/]", "data-hit"),
-	SetField("/", ["data-attribute"])
+	SetField("/", ["data-attribute"]),
+	MappedField(lambda s, i : s[i] if s[i] != "\n" or s[i-1] in ".]>" or s[i+1] in ".[<" else " " if s[i-1] != " " and s[i+1] != " " else "", ["tl-description"])
 ]
 
 

@@ -82,16 +82,39 @@ class TranslatedField(Field):
 
 class SetField(Field):
 	'''
-	This is a mix-in to reformat a field as a set
+	This is a mix-in to handle a field that contains data best understood as a set
+	Still returns the data a (newly sorted) string for consistency
 	'''
-	def __init__(self, delimeter, *args, **kwargs):
+	def __init__(self, delimeter, *args, sort_by = lambda x : x, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.delimeter = delimeter
+		self.sort_by = sort_by
 
 	def get(self, input, output, *args, **kwargs):
 		r = super().get(input, output, *args, **kwargs)
 		for name in self.names:
-			output[name] = frozenset(map(str.strip, output[name].split(self.delimeter)))
+			fs = set(map(str.strip, output[name].split(self.delimeter)))
+			output[name] = self.delimeter.join(sorted(fs, key=self.sort_by))
+		return r
+
+
+
+class MappedField(Field):
+	'''
+	Alters the string by applying the function to all character
+	Gives the function the arguments (string, index)
+	'''
+	def __init__(self, func, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.func = func 
+
+	def get(self, input, ouput, *args, **kwargs):
+		r = super().get(input, ouput, *args, **kwargs)
+		for name in self.names:
+			s = ""
+			for i in range(len(ouput[name])):
+				s += self.func(ouput[name], i)
+			ouput[name] = s
 		return r
 
 
