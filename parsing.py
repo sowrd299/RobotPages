@@ -1,5 +1,8 @@
 
 def parse_html_cards(soup, fields):
+	'''
+	Uses Field objects to extract data of interest from beautiful soup
+	'''
 	cards = []
 	for card in soup.find_all("div", {"class":"card-list-item__card__img"}):
 		card_data = dict()
@@ -10,6 +13,10 @@ def parse_html_cards(soup, fields):
 
 
 def parse_text_cards(text, fields):
+	'''
+	Uses field object to extract data of interest from a text file
+	Assumes it will receive at least one ReFields 
+	'''
 	#print(body)
 	i = 0
 	cards = []

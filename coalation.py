@@ -3,15 +3,22 @@
 from typing import DefaultDict
 
 
-def get_cols(data):
+def get_cols(data_set):
+	'''
+	Returns the collumns of a data set
+		as represented by the keys of its entries
+	'''
 	cols = set()
-	for entry in data:
+	for entry in data_set:
 		for col in entry:
 			cols.add(col)
 	return cols	
 
 
 def merge_entries(*entries):
+	'''
+	Returns an entry with all data from both given entries
+	'''
 	new_entry = dict()
 	for entry in entries:
 		new_entry.update(entry)
