@@ -18,14 +18,30 @@ def get_cols(data_set):
 def merge_entries(*entries):
 	'''
 	Returns an entry with all data from both given entries
+	Favores earlier entries if any columns conflict
 	'''
 	new_entry = dict()
-	for entry in entries:
+	for entry in reversed(entries):
 		new_entry.update(entry)
 	return new_entry
 
 
-def coalate(*args):
+def coalate_matched_buckets(merge_func, buckets):
+	'''
+	Coalate entries from all the given bucks (lists),
+	assuming the buckets have been found to match
+	an are already sorted by their hurisitic
+	'''
+	coalated_entries = []
+	num_entries = min([len(bucket) for bucket in buckets])
+	for i in range(num_entries):
+		coalated_entry = merge_func(*(key_bucket[i] for key_bucket in buckets))
+		if coalated_entry:
+			coalated_entries.append(coalated_entry)
+	return coalated_entries
+
+
+def coalate(*args, uncoalated_buckets = dict()):
 	'''
 	Takes each data set as lists of dictionaries (entries)
 	Takes (data set, sort function, data set, sort function)
@@ -50,17 +66,48 @@ def coalate(*args):
 	
 	# Ascociate data!
 	coalated_entries = []
-	uncoalated_keys = []
 	for key in keys:
 		key_buckets = [set_buckets[key] for set_buckets in buckets if key in set_buckets]
 		if len(key_buckets) == len(data_sets):
-			num_entries = min([len(bucket) for bucket in key_buckets])
-			for i in range(num_entries):
-				coalated_entry = merge_entries(*(key_bucket[i] for key_bucket in key_buckets))
-				coalated_entries.append(coalated_entry)
+			coalated_entries.extend(coalate_matched_buckets(merge_entries, key_buckets))
 		else:
-			uncoalated_keys.append(key)
+			uncoalated_buckets[key] = key_buckets
 
-	print("{} keys uncoalated!".format(len(uncoalated_keys)))
-	
 	return coalated_entries
+
+
+def distinct_cols_to_tuple(*entries):
+	'''
+	If the elements have distinct columns, it will 
+		return them as a tuple
+	'''
+	col_sets = set()
+	for entry in entries:
+		col_set = frozenset(entry.keys())
+		if col_set in col_sets:
+			return None
+		else:
+			col_sets.add(col_set)	
+	return tuple(entries)
+
+
+def coalate_unmatched(uncoalated_buckets, num_data_sets):
+	'''
+	Attempts to coalate unmatched buckets as output by the coalate unfunction
+	Uses a relaxes version of the coaltion requirements
+	'''
+	key_size = len(next(iter(uncoalated_buckets)))
+	potential_matches = []
+	for i in range(key_size):
+		key_mask = tuple(j != i for j in range(key_size))
+		relaxed_buckets = DefaultDict(list)
+
+		for old_key, buckets in uncoalated_buckets.items():
+			relaxed_key = tuple(item for j, item in enumerate(old_key) if key_mask[j])
+			relaxed_buckets[relaxed_key].extend(buckets)
+
+		for relaxed_key, buckets in relaxed_buckets.items():
+			if len(buckets) == num_data_sets:
+				potential_matches.extend(coalate_matched_buckets(distinct_cols_to_tuple, buckets))
+
+	return potential_matches
